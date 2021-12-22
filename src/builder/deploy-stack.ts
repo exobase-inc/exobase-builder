@@ -1,4 +1,4 @@
-import _ from 'radash'
+import _, { Defer } from 'radash'
 import axios from 'axios'
 import fs from 'fs-extra'
 import * as stream from 'stream'
@@ -7,6 +7,7 @@ import parseArgs from 'minimist'
 import makeApi from '../core/api'
 import config from '../core/config'
 import cmd from 'cmdish'
+import exobuilds from '@exobase/builds'
 
 
 type Args = {
@@ -15,23 +16,11 @@ type Args = {
 
 const safeName = (str: string) => str.replace(/[\.\-\s]/g, '_')
 
-const withDefer = async (func: (register: (defer: (err?: Error) => void) => void) => Promise<void>) => {
-  let deferedFuncs: Function[] = []
-  try {
-    await func((fn) => deferedFuncs.push(fn))
-  } catch (err) {
-    deferedFuncs.map(defered => defered(err))
-    return
-  }
-  deferedFuncs.map(defered => defered())
-}
+const main = _.defered(async ({ defer, deploymentId }: Args & { defer: Defer }) => {
 
-const main = async ({
-  deploymentId
-}: Args) => withDefer(async (defer) => {
 
   //
-  //  Setup Loggin
+  //  Setup Logging
   //
   const logFilePath = `${config.logDir}/${_.dashCase(deploymentId)}.log`
   await fs.writeFile(logFilePath, '')
@@ -46,9 +35,12 @@ const main = async ({
       deploymentId,
       status: err ? 'failed' : 'success',
       source: 'exo.builder.deploy',
-      logs
     }, { token: config.exobaseToken })
-    fs.removeSync(logFilePath)
+    api.platforms.updateDeploymentLogs({
+      deploymentId,
+      logs
+    })
+    // fs.removeSync(logFilePath)
   })
 
   // 
@@ -61,7 +53,7 @@ const main = async ({
   const serviceId = context.service.id
 
   console.log('>>> CONTEXT')
-  console.log(context)
+  console.log(JSON.stringify(context))
 
 
   // 
@@ -121,6 +113,10 @@ const main = async ({
   })
   const repoName = repository.replace(/http.+\//, '')
   await fs.rename(`${workingDir}/${repoName}-${branch}`, `${workingDir}/source`)
+  const functions = exobuilds.getFunctionMap({
+    path: `${workingDir}/source`,
+    ext: 'ts'
+  })
 
 
   // 
@@ -136,9 +132,8 @@ const main = async ({
     cwd: `${workingDir}`
   })
   if (outputErr) throw outputErr
-  const output = JSON.parse(outputStr)
   console.log('>>> OUTPUT')
-  console.log(output)
+  console.log(outputStr)
 
 
   // 
@@ -146,7 +141,7 @@ const main = async ({
   //
   await api.platforms.updateServiceAttributes({
     serviceId,
-    attributes: output
+    attributes: {} // TODO ^^^
   })
 
 
@@ -158,6 +153,14 @@ const main = async ({
     status: 'success',
     source: 'exo.builder.deploy'
   }, { token: config.exobaseToken })
+
+  await api.platforms.updateDeploymentFunctions({
+    deploymentId,
+    functions: functions.map(f => ({
+      module: f.module,
+      function: f.function
+    }))
+  })
 
   // Done... oh shit we did it...
 })

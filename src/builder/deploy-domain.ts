@@ -1,8 +1,5 @@
-import _ from 'radash'
-import axios from 'axios'
+import _, { Defer } from 'radash'
 import fs from 'fs-extra'
-import * as stream from 'stream'
-import { promisify } from 'util'
 import parseArgs from 'minimist'
 import makeApi from '../core/api'
 import config from '../core/config'
@@ -15,23 +12,11 @@ type Args = {
 
 const safeName = (str: string) => str.replace(/[\.\-\s]/g, '_')
 
-const withDefer = async (func: (register: (defer: (err?: Error) => void) => void) => Promise<void>) => {
-  let deferedFuncs: Function[] = []
-  try {
-    await func((fn) => deferedFuncs.push(fn))
-  } catch (err) {
-    deferedFuncs.map(defered => defered(err))
-    return
-  }
-  deferedFuncs.map(defered => defered())
-}
 
-const main = async ({
-  deploymentId
-}: Args) => withDefer(async (defer) => {
+const main = _.defered(async ({ defer, deploymentId }: Args & { defer: Defer }) => {
 
   //
-  //  Setup Loggin
+  //  Setup Logging
   //
   const logFilePath = `${config.logDir}/${_.dashCase(deploymentId)}.log`
   await fs.writeFile(logFilePath, '')
@@ -46,22 +31,24 @@ const main = async ({
       deploymentId,
       status: err ? 'failed' : 'success',
       source: 'exo.builder.deploy',
+    }, { token: config.exobaseToken })
+    api.platforms.updateDeploymentLogs({
+      deploymentId,
       logs
     }, { token: config.exobaseToken })
-    fs.removeSync(logFilePath)
+    // fs.removeSync(logFilePath)
   })
 
   // 
   //  Fetch data from exobase api for this platform/project/environment/deployment
   //
-  const { data: { context } } = await api.platforms.getDeploymentContext({
+  const { data: { context } } = await api.platforms.getDomainDeploymentContext({
     deploymentId
   }, { token: config.exobaseToken })
-  const platformId = context.platform.id
-  const serviceId = context.service.id
+  const { domain, platform } = context
 
   console.log('>>> CONTEXT')
-  console.log(context)
+  console.log(JSON.stringify(context))
 
 
   // 
@@ -77,13 +64,11 @@ const main = async ({
   // 
   //  Create temp pulumi working directory for this work
   //
-  const { service } = context
-  const deploymentDir = safeName(deploymentId)
-  const templateName = `exo-${service.type}-${service.provider}-${service.service}-${service.language}`
+  const templateName = `exo-${domain.provider}-domain`
   const {
     pulumiTemplatesDir: templatesDir
   } = config
-  const workingDir = `${templatesDir}/packages/${deploymentDir}`
+  const workingDir = `${templatesDir}/packages/${safeName(deploymentId)}`
   await cmd(`mkdir ${workingDir}`)
   defer(() => {
     cmd(`rm -rf ${workingDir}`)
@@ -103,50 +88,18 @@ const main = async ({
   await replaceInFile({
     file: `${workingDir}/Pulumi.yml`,
     find: /exobase-(.+?)-template/,
-    replacement: safeName(`${platformId}_${serviceId}`)
+    replacement: safeName(`${platform.id}_${domain.id}`)
   })
-
-
-  //
-  //  Download Source
-  //
-  const { repository, branch } = context.service.source
-  await downloadZipFile({
-    url: `${repository}/archive/refs/heads/${branch}.zip`,
-    path: `${workingDir}/source.zip`
-  })
-  await cmd(`unzip source.zip`, {
-    cwd: `${workingDir}`,
-    quiet: true
-  })
-  const repoName = repository.replace(/http.+\//, '')
-  await fs.rename(`${workingDir}/${repoName}-${branch}`, `${workingDir}/source`)
 
 
   // 
   //  Start Pulumi deploy & get the outputs
   //
-  await cmd(`pulumi stack init ${context.environment.name.toLowerCase()}`, {
+  await cmd(`pulumi stack init ${safeName(domain.domain)}`, {
     cwd: `${workingDir}`
   })
   await cmd('pulumi up --yes', {
     cwd: `${workingDir}`
-  })
-  const [outputErr, outputStr] = await cmd('pulumi stack output --json', {
-    cwd: `${workingDir}`
-  })
-  if (outputErr) throw outputErr
-  const output = JSON.parse(outputStr)
-  console.log('>>> OUTPUT')
-  console.log(output)
-
-
-  // 
-  //  Update service attributes with the Pulumi outputs  
-  //
-  await api.platforms.updateServiceAttributes({
-    serviceId,
-    attributes: output
   })
 
 
@@ -179,22 +132,4 @@ const replaceInFile = async ({
   const content = await fs.readFile(file, 'utf-8')
   const newContent = content.replace(find, replacement)
   await fs.writeFile(file, newContent)
-}
-
-const downloadZipFile = async ({
-  url,
-  path
-}: {
-  url: string
-  path: string
-}): Promise<any> => {
-  const finished = promisify(stream.finished)
-  const writer = fs.createWriteStream(path)
-  const response = await axios({
-    url,
-    method: 'GET',
-    responseType: 'stream'
-  })
-  response.data.pipe(writer)
-  return await finished(writer)
 }

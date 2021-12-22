@@ -8,10 +8,11 @@
     "deploy-stack": "ts-node  --transpile-only ./src/builder/deploy-stack.ts",
     "deploy-domain": "ts-node  --transpile-only ./src/builder/deploy-domain.ts",
     "dev:deploy-stack": "source ./env.sh && ts-node  --transpile-only ./src/builder/deploy-stack.ts --deploymentId exo.service.fb33577678dc338a15dd0d40",
-    "dev:deploy-domain": "source ./env.sh && ts-node  --transpile-only ./src/builder/deploy-domain.ts --deploymentId exo.service.fb33577678dc338a15dd0d40"
+    "dev:deploy-domain": "source ./env.sh && ts-node  --transpile-only ./src/builder/deploy-domain.ts --deploymentId exo.deployment.40498e04a6cbfdab0ebb4870"
   },
   "dependencies": {
     "@exobase/api": "^0.0.4",
+    "@exobase/builds": "^0.0.1",
     "@exobase/core": "^0.0.3",
     "@exobase/express": "^0.0.3",
     "@exobase/hooks": "^0.0.5",
@@ -21,7 +22,7 @@
     "express": "^4.17.1",
     "fs-extra": "^10.0.0",
     "minimist": "^1.2.5",
-    "radash": "^1.4.0",
+    "radash": "^1.5.1",
     "ts-node": "^10.4.0",
     "typescript": "^4.5.2"
   },

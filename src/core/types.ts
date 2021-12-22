@@ -124,6 +124,7 @@ export type Platform = {
   name: string
   environments: Environment[]
   services: Service[]
+  domains: Domain[]
   providers: {
     aws: {
       accessKeyId: '***************' | null
@@ -149,12 +150,30 @@ export type ElevatedPlatform = {
   name: string
   environments: Environment[]
   services: Service[]
+  domains: Domain[]
   providers: {
     aws?: AWSProviderConfig
     gcp?: GCPProviderConfig
     vercel?: VercelProviderConfig
     heroku?: HerokuProviderConfig
   }
+}
+
+export type DomainDeployment = {
+  _view: 'exo.domain-deployment'
+  id: string
+  platformId: string
+  domainId: string
+  startedAt: number
+  finishedAt: number | null
+  status: DeploymentStatus
+  ledger: DeploymentLedgerItem[]
+  logs: string
+}
+
+export type ExobaseFunction = {
+  module: string
+  function: string
 }
 
 export type DeploymentContext = {
@@ -164,10 +183,26 @@ export type DeploymentContext = {
   instance: ServiceInstance
   environment: Environment
   deployment: Deployment
+  functions: ExobaseFunction[]
+}
+
+export type DomainDeploymentContext = {
+  _view: 'exo.domain-deployment.context'
+  platform: Omit<ElevatedPlatform, 'services'>
+  domain: Domain
+  deployment: DomainDeployment
 }
 
 export interface DeploymentLedgerItem {
   status: DeploymentStatus
   timestamp: number
   source: string
+}
+
+export type Domain = {
+  id: string
+  platformId: string
+  domain: string
+  provider: CloudProvider
+  latestDeploymentId: string | null
 }

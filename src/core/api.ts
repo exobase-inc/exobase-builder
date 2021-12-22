@@ -1,6 +1,6 @@
 import _ from 'radash'
 import api from '@exobase/api'
-import * as t from '../types'
+import * as t from './types'
 
 
 const createApi = (url: string) => {
@@ -11,7 +11,6 @@ const createApi = (url: string) => {
         deploymentId: string
         status: t.DeploymentStatus
         source: 'exo.builder.deploy'
-        logs?: string
       }, void>({
         module: 'platforms',
         function: 'updateDeploymentStatus'
@@ -23,6 +22,28 @@ const createApi = (url: string) => {
       }>({
         module: 'platforms',
         function: 'getDeploymentContext'
+      }),
+      getDomainDeploymentContext: endpoint<{
+        deploymentId: string
+      }, {
+        context: t.DomainDeploymentContext
+      }>({
+        module: 'platforms',
+        function: 'getDomainDeploymentContext'
+      }),
+      updateDeploymentFunctions: endpoint<{
+        deploymentId: string
+        functions: t.ExobaseFunction[]
+      }, void>({
+        module: 'platforms',
+        function: 'updateDeploymentFunctions'
+      }),
+      updateDeploymentLogs: endpoint<{
+        deploymentId: string
+        logs: string
+      }, void>({
+        module: 'platforms',
+        function: 'updateDeploymentLogs'
       }),
       updateServiceAttributes: endpoint<{
         serviceId: string
