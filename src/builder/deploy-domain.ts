@@ -1,7 +1,7 @@
 import _, { Defer } from 'radash'
 import fs from 'fs-extra'
 import parseArgs from 'minimist'
-import makeApi from '../core/api'
+import api from '../core/api'
 import config from '../core/config'
 import cmd from 'cmdish'
 
@@ -23,16 +23,14 @@ const main = _.defered(async ({ defer, deploymentId }: Args & { defer: Defer }) 
   const logStream = fs.createWriteStream(logFilePath)
   process.stdout.write = process.stderr.write = logStream.write.bind(logStream)
 
-  const api = makeApi(config.exobaseApiUrl)
-
   defer((err) => {
     const logs = fs.readFileSync(logFilePath, 'utf-8')
-    api.platforms.updateDeploymentStatus({
+    api.deployments.updateStatus({
       deploymentId,
       status: err ? 'failed' : 'success',
       source: 'exo.builder.deploy',
     }, { token: config.exobaseToken })
-    api.platforms.updateDeploymentLogs({
+    api.deployments.updateLogs({
       deploymentId,
       logs
     }, { token: config.exobaseToken })
@@ -42,7 +40,7 @@ const main = _.defered(async ({ defer, deploymentId }: Args & { defer: Defer }) 
   // 
   //  Fetch data from exobase api for this platform/project/environment/deployment
   //
-  const { data: { context } } = await api.platforms.getDomainDeploymentContext({
+  const { data: { context } } = await api.domainDeployment.getContext({
     deploymentId
   }, { token: config.exobaseToken })
   const { domain, platform } = context
@@ -54,7 +52,7 @@ const main = _.defered(async ({ defer, deploymentId }: Args & { defer: Defer }) 
   // 
   //  Mark deployment as in progress
   //
-  await api.platforms.updateDeploymentStatus({
+  await api.deployments.updateStatus({
     deploymentId,
     status: 'in_progress',
     source: 'exo.builder.deploy'
@@ -106,7 +104,7 @@ const main = _.defered(async ({ defer, deploymentId }: Args & { defer: Defer }) 
   // 
   //  Mark deployment with Pulumi status (error/success/partial-success)
   //
-  await api.platforms.updateDeploymentStatus({
+  await api.deployments.updateStatus({
     deploymentId,
     status: 'success',
     source: 'exo.builder.deploy'

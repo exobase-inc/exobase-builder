@@ -4,10 +4,11 @@ import fs from 'fs-extra'
 import * as stream from 'stream'
 import { promisify } from 'util'
 import parseArgs from 'minimist'
-import makeApi from '../core/api'
+import api from '../core/api'
 import config from '../core/config'
 import cmd from 'cmdish'
 import exobuilds from '@exobase/builds'
+import JSZip from 'jszip'
 
 
 type Args = {
@@ -24,29 +25,27 @@ const main = _.defered(async ({ defer, deploymentId }: Args & { defer: Defer }) 
   //
   const logFilePath = `${config.logDir}/${_.dashCase(deploymentId)}.log`
   await fs.writeFile(logFilePath, '')
-  const logStream = fs.createWriteStream(logFilePath)
-  process.stdout.write = process.stderr.write = logStream.write.bind(logStream)
-
-  const api = makeApi(config.exobaseApiUrl)
+  // const logStream = fs.createWriteStream(logFilePath)
+  // process.stdout.write = process.stderr.write = logStream.write.bind(logStream)
 
   defer((err) => {
     const logs = fs.readFileSync(logFilePath, 'utf-8')
-    api.platforms.updateDeploymentStatus({
+    api.deployments.updateStatus({
       deploymentId,
       status: err ? 'failed' : 'success',
       source: 'exo.builder.deploy',
     }, { token: config.exobaseToken })
-    api.platforms.updateDeploymentLogs({
+    api.deployments.updateLogs({
       deploymentId,
       logs
-    })
+    }, { token: config.exobaseToken })
     // fs.removeSync(logFilePath)
   })
 
-  // 
+  //
   //  Fetch data from exobase api for this platform/project/environment/deployment
   //
-  const { data: { context } } = await api.platforms.getDeploymentContext({
+  const { data: { context } } = await api.deployments.getContext({
     deploymentId
   }, { token: config.exobaseToken })
   const platformId = context.platform.id
@@ -59,7 +58,7 @@ const main = _.defered(async ({ defer, deploymentId }: Args & { defer: Defer }) 
   // 
   //  Mark deployment as in progress
   //
-  await api.platforms.updateDeploymentStatus({
+  await api.deployments.updateStatus({
     deploymentId,
     status: 'in_progress',
     source: 'exo.builder.deploy'
@@ -78,7 +77,7 @@ const main = _.defered(async ({ defer, deploymentId }: Args & { defer: Defer }) 
   const workingDir = `${templatesDir}/packages/${deploymentDir}`
   await cmd(`mkdir ${workingDir}`)
   defer(() => {
-    cmd(`rm -rf ${workingDir}`)
+    // cmd(`rm -rf ${workingDir}`)
   })
   await cmd(`cp -a ${templatesDir}/packages/${templateName}/. ${workingDir}`)
 
@@ -102,17 +101,29 @@ const main = _.defered(async ({ defer, deploymentId }: Args & { defer: Defer }) 
   //
   //  Download Source
   //
-  const { repository, branch } = context.service.source
+  const linkResponse = await api.services.getSourceDownloadLink({
+    serviceId,
+    platformId,
+    deploymentId
+  }, { token: config.exobaseToken })
+  // TODO: FIX
+  console.log('x- linkResponse: ', linkResponse)
+  console.log('x- linkResponse.error: ', linkResponse.error)
+  console.log('x- linkResponse.data: ', linkResponse.data)
+  if (linkResponse.error) {
+    console.error(linkResponse.error)
+    return
+  }
   await downloadZipFile({
-    url: `${repository}/archive/refs/heads/${branch}.zip`,
+    url: linkResponse.data.url,
     path: `${workingDir}/source.zip`
   })
   await cmd(`unzip source.zip`, {
     cwd: `${workingDir}`,
     quiet: true
   })
-  const repoName = repository.replace(/http.+\//, '')
-  await fs.rename(`${workingDir}/${repoName}-${branch}`, `${workingDir}/source`)
+  const sourceDirName = await getSourceDirName(`${workingDir}/source.zip`)
+  await fs.rename(`${workingDir}/${sourceDirName}`, `${workingDir}/source`)
   const functions = exobuilds.getFunctionMap({
     path: `${workingDir}/source`,
     ext: 'ts'
@@ -122,7 +133,7 @@ const main = _.defered(async ({ defer, deploymentId }: Args & { defer: Defer }) 
   // 
   //  Start Pulumi deploy & get the outputs
   //
-  await cmd(`pulumi stack init ${context.environment.name.toLowerCase()}`, {
+  await cmd(`pulumi stack init ${safeName(context.service.id)}`, {
     cwd: `${workingDir}`
   })
   await cmd('pulumi up --yes', {
@@ -139,28 +150,28 @@ const main = _.defered(async ({ defer, deploymentId }: Args & { defer: Defer }) 
   // 
   //  Update service attributes with the Pulumi outputs  
   //
-  await api.platforms.updateServiceAttributes({
-    serviceId,
+  await api.deployments.updateAttributes({
+    deploymentId,
     attributes: {} // TODO ^^^
-  })
+  }, { token: config.exobaseToken })
 
 
   // 
   //  Mark deployment with Pulumi status (error/success/partial-success)
   //
-  await api.platforms.updateDeploymentStatus({
+  await api.deployments.updateStatus({
     deploymentId,
     status: 'success',
     source: 'exo.builder.deploy'
   }, { token: config.exobaseToken })
 
-  await api.platforms.updateDeploymentFunctions({
+  await api.deployments.updateFunctions({
     deploymentId,
     functions: functions.map(f => ({
       module: f.module,
       function: f.function
     }))
-  })
+  }, { token: config.exobaseToken })
 
   // Done... oh shit we did it...
 })
@@ -200,4 +211,10 @@ const downloadZipFile = async ({
   })
   response.data.pipe(writer)
   return await finished(writer)
+}
+
+const getSourceDirName = async (zipPath: string) => {
+  const zipFileData = await fs.readFile(zipPath)
+  const zip = await JSZip.loadAsync(zipFileData)
+  return Object.keys(zip.files)[0]
 }
