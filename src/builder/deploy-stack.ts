@@ -101,15 +101,17 @@ const main = _.defered(async ({ defer, deploymentId }: Args & { defer: Defer }) 
   //
   //  Download Source
   //
+  //  GitHub gives us a zip that contains a single folder with a name
+  //  like '{owner}-{repo}-{commit_hash}'. We don't have any easy way
+  //  to figure out what the hash is so we use `getSourceDirName` to
+  //  get the name of that directory. We then rename it to 'source' as
+  //  our pulumi template scripts will expect.
+  //
   const linkResponse = await api.services.getSourceDownloadLink({
     serviceId,
     platformId,
     deploymentId
   }, { token: config.exobaseToken })
-  // TODO: FIX
-  console.log('x- linkResponse: ', linkResponse)
-  console.log('x- linkResponse.error: ', linkResponse.error)
-  console.log('x- linkResponse.data: ', linkResponse.data)
   if (linkResponse.error) {
     console.error(linkResponse.error)
     return
@@ -133,18 +135,39 @@ const main = _.defered(async ({ defer, deploymentId }: Args & { defer: Defer }) 
   // 
   //  Start Pulumi deploy & get the outputs
   //
+  //  If the stack has already been created the init will fail, but the
+  //  select will succeed. If the stack has not been created the init
+  //  will succeed but the select will fail. Ignoring some errors here
+  //  so we don't have to do more work.
+  //
   await cmd(`pulumi stack init ${safeName(context.service.id)}`, {
-    cwd: `${workingDir}`
+    cwd: workingDir
   })
-  await cmd('pulumi up --yes', {
-    cwd: `${workingDir}`
+  await cmd(`pulumi stack select ${safeName(context.service.id)}`, {
+    cwd: workingDir
   })
-  const [outputErr, outputStr] = await cmd('pulumi stack output --json', {
-    cwd: `${workingDir}`
+  const [upErr] = await cmd('pulumi up --yes', {
+    cwd: workingDir
   })
-  if (outputErr) throw outputErr
-  console.log('>>> OUTPUT')
-  console.log(outputStr)
+  if (upErr !== null) {
+    console.error('The Pulumi deployment stack failed to deploy. Check for errors just above this.')
+    throw 'Pulumi up failed'
+  }
+  const [outputErr, stackOutput] = await cmd('pulumi stack output --json', {
+    cwd: workingDir,
+    buffer: true
+  })
+  if (outputErr !== null) {
+    console.error('The Pulumi stack failed to provide outputs. Check for errors just above this.')
+    throw 'Pulumi outputs failed'
+  }
+
+  const output = stackOutput && stackOutput.length > 2
+    ? JSON.parse(stackOutput) as any
+    : { default: { out: {} }}
+
+  console.log('===x OUTPUT:')
+  console.log(output)
 
 
   // 
@@ -152,7 +175,7 @@ const main = _.defered(async ({ defer, deploymentId }: Args & { defer: Defer }) 
   //
   await api.deployments.updateAttributes({
     deploymentId,
-    attributes: {} // TODO ^^^
+    attributes: output.default.out
   }, { token: config.exobaseToken })
 
 

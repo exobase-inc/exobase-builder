@@ -20,8 +20,8 @@ const main = _.defered(async ({ defer, deploymentId }: Args & { defer: Defer }) 
   //
   const logFilePath = `${config.logDir}/${_.dashCase(deploymentId)}.log`
   await fs.writeFile(logFilePath, '')
-  const logStream = fs.createWriteStream(logFilePath)
-  process.stdout.write = process.stderr.write = logStream.write.bind(logStream)
+  // const logStream = fs.createWriteStream(logFilePath)
+  // process.stdout.write = process.stderr.write = logStream.write.bind(logStream)
 
   defer((err) => {
     const logs = fs.readFileSync(logFilePath, 'utf-8')
