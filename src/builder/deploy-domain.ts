@@ -40,7 +40,7 @@ const main = _.defered(async ({ defer, deploymentId }: Args & { defer: Defer }) 
   // 
   //  Fetch data from exobase api for this platform/project/environment/deployment
   //
-  const { data: { context } } = await api.domainDeployment.getContext({
+  const { data: { context } } = await api.domainDeployments.getContext({
     deploymentId
   }, { token: config.exobaseToken })
   const { domain, platform } = context

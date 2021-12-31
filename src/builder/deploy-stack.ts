@@ -28,6 +28,7 @@ const main = _.defered(async ({ defer, deploymentId }: Args & { defer: Defer }) 
   // const logStream = fs.createWriteStream(logFilePath)
   // process.stdout.write = process.stderr.write = logStream.write.bind(logStream)
 
+  
   defer((err) => {
     const logs = fs.readFileSync(logFilePath, 'utf-8')
     api.deployments.updateStatus({
@@ -42,6 +43,7 @@ const main = _.defered(async ({ defer, deploymentId }: Args & { defer: Defer }) 
     // fs.removeSync(logFilePath)
   })
 
+
   //
   //  Fetch data from exobase api for this platform/project/environment/deployment
   //
@@ -50,9 +52,6 @@ const main = _.defered(async ({ defer, deploymentId }: Args & { defer: Defer }) 
   }, { token: config.exobaseToken })
   const platformId = context.platform.id
   const serviceId = context.service.id
-
-  console.log('>>> CONTEXT')
-  console.log(JSON.stringify(context))
 
 
   // 
@@ -77,7 +76,7 @@ const main = _.defered(async ({ defer, deploymentId }: Args & { defer: Defer }) 
   const workingDir = `${templatesDir}/packages/${deploymentDir}`
   await cmd(`mkdir ${workingDir}`)
   defer(() => {
-    // cmd(`rm -rf ${workingDir}`)
+    cmd(`rm -rf ${workingDir}`)
   })
   await cmd(`cp -a ${templatesDir}/packages/${templateName}/. ${workingDir}`)
 
@@ -130,6 +129,8 @@ const main = _.defered(async ({ defer, deploymentId }: Args & { defer: Defer }) 
     path: `${workingDir}/source`,
     ext: 'ts'
   })
+  const pj = await fs.readJson(`${workingDir}/source/package.json`)
+  const version = pj?.version ?? ''
 
 
   // 
@@ -166,16 +167,22 @@ const main = _.defered(async ({ defer, deploymentId }: Args & { defer: Defer }) 
     ? JSON.parse(stackOutput) as any
     : { default: { out: {} }}
 
-  console.log('===x OUTPUT:')
-  console.log(output)
-
+    
 
   // 
   //  Update service attributes with the Pulumi outputs  
   //
   await api.deployments.updateAttributes({
     deploymentId,
-    attributes: output.default.out
+    attributes: {
+      version,
+      url: output.default.out.url,
+      outputs: output.default.out,
+      functions: functions.map(f => ({
+        module: f.module,
+        function: f.function
+      }))
+    }
   }, { token: config.exobaseToken })
 
 
@@ -188,21 +195,13 @@ const main = _.defered(async ({ defer, deploymentId }: Args & { defer: Defer }) 
     source: 'exo.builder.deploy'
   }, { token: config.exobaseToken })
 
-  await api.deployments.updateFunctions({
-    deploymentId,
-    functions: functions.map(f => ({
-      module: f.module,
-      function: f.function
-    }))
-  }, { token: config.exobaseToken })
-
   // Done... oh shit we did it...
 })
 
 
 main(parseArgs(process.argv) as any as Args).catch((err) => {
   console.error(err)
-  process.exit(1)
+  // process.exit(1)
 })
 
 
