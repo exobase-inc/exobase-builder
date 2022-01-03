@@ -6,8 +6,10 @@
   "scripts": {
     "dev": "source ./env.sh && ts-node ./src/dev.ts",
     "deploy-stack": "ts-node  --transpile-only ./src/builder/deploy-stack.ts",
+    "destroy-stack": "ts-node  --transpile-only ./src/builder/destroy-stack.ts",
     "deploy-domain": "ts-node  --transpile-only ./src/builder/deploy-domain.ts",
     "dev:deploy-stack": "source ./env.sh && ts-node  --transpile-only ./src/builder/deploy-stack.ts --deploymentId exo.service.fb33577678dc338a15dd0d40",
+    "dev:destroy-stack": "source ./env.sh && ts-node  --transpile-only ./src/builder/destroy-stack.ts --deploymentId exo.service.fb33577678dc338a15dd0d40",
     "dev:deploy-domain": "source ./env.sh && ts-node  --transpile-only ./src/builder/deploy-domain.ts --deploymentId exo.deployment.40498e04a6cbfdab0ebb4870",
     "test": "jest --coverage"
   },
