@@ -79,8 +79,8 @@ const main = _.defered(async ({ defer, deploymentId }: Args & { defer: Defer }) 
   const { service } = context
   const deploymentDir = safeName(deploymentId)
   const availablePackages = await listDirsInDir(`${templatesDir}/packages`)
-  const withLang = `exo-${service.type}-${service.provider}-${service.service}-${service.language}`
-  const withoutLang = `exo-${service.type}-${service.provider}-${service.service}`
+  const withLang = `${service.provider}-${service.service}-${service.type}-${service.language}`
+  const withoutLang = `${service.provider}-${service.service}-${service.type}`
   const templateName = (() => {
     if (availablePackages.includes(withLang)) return withLang
     if (availablePackages.includes(withoutLang)) return withoutLang
@@ -164,6 +164,9 @@ const main = _.defered(async ({ defer, deploymentId }: Args & { defer: Defer }) 
   await cmd(`pulumi stack select ${stackName}`, {
     cwd: workingDir
   })
+  await cmd(`pulumi refresh --stack ${stackName} --yes`, {
+    cwd: workingDir
+  })
   const [upErr] = await cmd('pulumi up --yes', {
     cwd: workingDir
   })
@@ -179,7 +182,6 @@ const main = _.defered(async ({ defer, deploymentId }: Args & { defer: Defer }) 
     console.error('The Pulumi stack failed to provide outputs. Check for errors just above this.')
     throw 'Pulumi outputs failed'
   }
-
   const output = stackOutput && stackOutput.length > 2
     ? JSON.parse(stackOutput) as any
     : { default: { out: {} } }
@@ -193,8 +195,8 @@ const main = _.defered(async ({ defer, deploymentId }: Args & { defer: Defer }) 
     deploymentId,
     attributes: {
       version,
-      url: output.default.out.url,
-      outputs: output.default.out,
+      url: output.default.url,
+      outputs: output.default,
       functions: service.type === 'api' ? functions.map(f => ({
         module: f.module,
         function: f.function
