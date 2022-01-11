@@ -1194,10 +1194,10 @@ cliui@^7.0.2:
     strip-ansi "^6.0.0"
     wrap-ansi "^7.0.0"
 
-cmdish@^1.0.0:
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/cmdish/-/cmdish-1.0.0.tgz#60a25168f623a8022aad4f2bb7838839c2c89b3a"
-  integrity sha512-iPpuAa6sCR4s4yqdZAhEQ5JXOZ0ZnXBBFj/C2OmOYqvBiozpeNzINDJgP7CI0nr7AeeZCoF2D+HMRc24219ilA==
+cmdish@^1.0.2:
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/cmdish/-/cmdish-1.0.2.tgz#c212dd47ac46af2f0cd6660bac3fd97f8ae5571a"
+  integrity sha512-GZUakj5nRJGZEUDKFU/gV9xLOHiA5qg7zVYe2liJiXtsdRvYsAzYuj1N5RuegMRdK0TJ+vXzm/Conu7sMscgWw==
 
 co@^4.6.0:
   version "4.6.0"

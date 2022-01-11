@@ -55,7 +55,7 @@ const main = async (): Promise<Outputs> => {
   //
   const project = new AWSCodeBuildProject(_.dashCase(service.name), {
     sourceDir: `${__dirname}/source`,
-    buildTimeoutSeconds: config.buildTimeoutSeconds,
+    buildTimeoutSeconds: toNumber(config.buildTimeoutSeconds),
     buildCommand: config.buildCommand,
     image: 'node:16',
     environmentVariables: deployment.config.environmentVariables
@@ -146,6 +146,11 @@ const installSourceDependencies = async () => {
     if (err) throw err
   }
 
+}
+
+const toNumber = (value: string | number): number => {
+  if (_.isString) return parseInt(value as string)
+  return value as number
 }
 
 export default main()

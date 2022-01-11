@@ -87,18 +87,6 @@
     fs-extra "^10.0.0"
     radash "^1.4.0"
 
-"@exobase/pulumi-aws-lambda-api@^0.0.1-alpha.10":
-  version "0.0.1-alpha.10"
-  resolved "https://registry.yarnpkg.com/@exobase/pulumi-aws-lambda-api/-/pulumi-aws-lambda-api-0.0.1-alpha.10.tgz#6684d9a4dbcff9e54303397fc2273f6efdc1b174"
-  integrity sha512-6Z8gyrpJlJ9FeBYdiM0ODWbCWqiPSfstxCIy5rbVLSsIlO2DSdW+dEbiNw1hLGiiBUmlkUsBV/dfZdWYvDXLnw==
-  dependencies:
-    "@pulumi/aws" "^4.0.0"
-    "@pulumi/awsx" "^0.30.0"
-    "@pulumi/pulumi" "^3.0.0"
-    cmdish "^1.0.0"
-    fs-extra "^10.0.0"
-    radash "^1.4.0"
-
 "@exobase/pulumi-aws-lambda-api@^0.0.1-alpha.13":
   version "0.0.1-alpha.13"
   resolved "https://registry.yarnpkg.com/@exobase/pulumi-aws-lambda-api/-/pulumi-aws-lambda-api-0.0.1-alpha.13.tgz#cd4555feca6a9b2ccfda52e11045bd39e1274789"

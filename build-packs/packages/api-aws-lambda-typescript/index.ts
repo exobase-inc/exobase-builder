@@ -42,6 +42,10 @@ const main = async (): Promise<Outputs> => {
   //
   //  CREATE API/LAMBDA RESOURCES
   //
+  const envVarDict = deployment.config.environmentVariables.reduce((acc, ev) => ({ 
+    ...acc, 
+    [ev.name]: ev.value 
+  }), {})
   const api = new AWSLambdaAPI('api', {
     sourceDir: `${__dirname}/source`,
     sourceExt: 'ts',
@@ -55,16 +59,11 @@ const main = async (): Promise<Outputs> => {
     runtime: 'nodejs14.x',
     timeout: toNumber(config.timeout),
     memory: toNumber(config.memory),
-    environmentVariables: [
-      ...deployment.config.environmentVariables,
-      {
-        name: 'EXOBASE_PLATFORM',
-        value: platform.name
-      }, {
-        name: 'EXOBASE_SERVICE',
-        value: service.name
-      }
-    ],
+    environmentVariables: {
+      ...envVarDict,
+      EXOBASE_PLATFORM: platform.name,
+      EXOBASE_SERVICE: service.name
+    },
     domain: service.domain
   }, { provider })
 
