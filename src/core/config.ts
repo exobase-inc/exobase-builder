@@ -1,3 +1,5 @@
+import path from 'path'
+
 
 const get = <T = string>(name: string, defaultValue: T = null, cast: (v: any) => T = (v) => v): T => {
     const val = process.env[name]
@@ -11,13 +13,13 @@ const config = {
     env,
     logLevel: get('LOG_LEVEL'),
     version: get('VERSION'),
-    tokenSignatureSecret: get('TOKEN_SIG_SECRET'),
-    projectRootDir: get('PROJECT_ROOT_DIR'),
-    logDir: get('EXOBASE_LOG_DIR'),
-    pulumiTemplatesDir: get('PULUMI_TEMPLATES_DIR'),
     pulumiAccessToken: get('PULUMI_ACCESS_TOKEN'),
     exobaseApiUrl: get('EXOBASE_API_URL'),
-    exobaseToken: get('EXOBASE_TOKEN')
+    exobaseToken: get('EXOBASE_TOKEN'),
+    rootDir: path.join(__dirname, '../..'),
+    logDir: path.join(__dirname, '../../logs'),
+    stackBuilderDir: path.join(__dirname, '../../build-packs'),
+    scriptsDir: path.join(__dirname, '../builder')
 }
 
 export type Config = typeof config

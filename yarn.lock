@@ -313,14 +313,6 @@
     axios "^0.24.0"
     radash "^1.2.0"
 
-"@exobase/api@^0.0.6":
-  version "0.0.6"
-  resolved "https://registry.yarnpkg.com/@exobase/api/-/api-0.0.6.tgz#326ce5145057998110173f1d65ae100e6f38e008"
-  integrity sha512-lIWmmcOM1SWDlvmLZb93nhCBsW45EHCWZDmrBOhkMsQWtWSelBOiDFLLwJU7pzRP9rQNOHsy+zM3Khwd1FJbew==
-  dependencies:
-    axios "^0.24.0"
-    radash "^1.2.0"
-
 "@exobase/builds@^0.0.1":
   version "0.0.1"
   resolved "https://registry.yarnpkg.com/@exobase/builds/-/builds-0.0.1.tgz#6b6ebc33de5f5b55f03015ff63850c9343a865d5"
@@ -329,12 +321,20 @@
     fs-extra "^10.0.0"
     radash "^1.3.0"
 
-"@exobase/client-js@^0.0.24":
-  version "0.0.24"
-  resolved "https://registry.yarnpkg.com/@exobase/client-js/-/client-js-0.0.24.tgz#25d10aea4640e891e3a7a9600a21b80596cf6a6d"
-  integrity sha512-f7qdR+Gmf3dNtvG6cZtsQ5bhviJI+0plWINAnY426gUnNVbHMTWqU2rSMabfQV3ycya2ODcrG2dgsBY5JJ0Z7A==
+"@exobase/client-builder@^0.0.1":
+  version "0.0.1"
+  resolved "https://registry.yarnpkg.com/@exobase/client-builder/-/client-builder-0.0.1.tgz#d3dbbc79e7f9ab8ebf8d0ad8b8c3651886c5c3b5"
+  integrity sha512-i1yR51CU45c17fJmzAoHrdJU2acdhNWN+uhItcv4knAKpFRuHCRBhh42U73dHVzfQmDbDq50HyNOeuEQt+pViA==
   dependencies:
-    "@exobase/api" "^0.0.6"
+    axios "^0.24.0"
+    radash "^1.2.0"
+
+"@exobase/client-js@^0.0.41":
+  version "0.0.41"
+  resolved "https://registry.yarnpkg.com/@exobase/client-js/-/client-js-0.0.41.tgz#54bb44fb7261c421308a0c6d7a32802ba6a3514f"
+  integrity sha512-DYvng0qZjFAszh8MTOKV2cPr9EA5pb7nZdNZPShJ9LkZwpvrAjkbmWXaR60ldUcDDCVkYr7ZRHnreCPxBMX3gQ==
+  dependencies:
+    "@exobase/client-builder" "^0.0.1"
 
 "@exobase/core@^0.0.3":
   version "0.0.3"

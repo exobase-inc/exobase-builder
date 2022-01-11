@@ -1,14 +1,9 @@
 import _, { Defer } from 'radash'
-import axios from 'axios'
 import fs from 'fs-extra'
-import * as stream from 'stream'
-import { promisify } from 'util'
 import parseArgs from 'minimist'
 import api from '../core/api'
 import config from '../core/config'
 import cmd from 'cmdish'
-import exobuilds from '@exobase/builds'
-import JSZip from 'jszip'
 
 
 type Args = {
@@ -68,7 +63,7 @@ const main = _.defered(async ({ defer, deploymentId }: Args & { defer: Defer }) 
   //  Create temp pulumi working directory for this work
   //
   const {
-    pulumiTemplatesDir: templatesDir
+    stackBuilderDir: templatesDir
   } = config
   const { service } = context
   const deploymentDir = safeName(deploymentId)

@@ -1,5 +1,10 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
+# Ignore the older builder packages
+**/packages/exo-*
+**/packages/exo_deployment_*
+**/context.json
+
 # Deployments working directory
 /deployments/
 /logs/

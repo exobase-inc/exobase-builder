@@ -24,6 +24,7 @@ const main = _.defered(async ({ defer, deploymentId }: Args & { defer: Defer }) 
   //  Setup Logging
   //
   const logFilePath = `${config.logDir}/${_.dashCase(deploymentId)}.log`
+  await fs.mkdir(config.logDir, { recursive: true })
   await fs.writeFile(logFilePath, '')
   const logStream = fs.createWriteStream(logFilePath)
   process.stdout.write = process.stderr.write = logStream.write.bind(logStream)
@@ -74,13 +75,13 @@ const main = _.defered(async ({ defer, deploymentId }: Args & { defer: Defer }) 
   //  Create temp pulumi working directory for this work
   //
   const {
-    pulumiTemplatesDir: templatesDir
+    stackBuilderDir: templatesDir
   } = config
   const { service } = context
   const deploymentDir = safeName(deploymentId)
   const availablePackages = await listDirsInDir(`${templatesDir}/packages`)
-  const withLang = `${service.provider}-${service.service}-${service.type}-${service.language}`
-  const withoutLang = `${service.provider}-${service.service}-${service.type}`
+  const withLang = `${service.type}-${service.provider}-${service.service}-${service.language}`
+  const withoutLang = `${service.type}-${service.provider}-${service.service}`
   const templateName = (() => {
     if (availablePackages.includes(withLang)) return withLang
     if (availablePackages.includes(withoutLang)) return withoutLang

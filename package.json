@@ -11,7 +11,8 @@
     "dev:deploy-stack": "source ./env.sh && ts-node  --transpile-only ./src/builder/deploy-stack.ts --deploymentId exo.service.fb33577678dc338a15dd0d40",
     "dev:destroy-stack": "source ./env.sh && ts-node  --transpile-only ./src/builder/destroy-stack.ts --deploymentId exo.service.fb33577678dc338a15dd0d40",
     "dev:deploy-domain": "source ./env.sh && ts-node  --transpile-only ./src/builder/deploy-domain.ts --deploymentId exo.deployment.40498e04a6cbfdab0ebb4870",
-    "test": "jest --coverage"
+    "test": "jest --coverage",
+    "postinstall": "cd build-packs && yarn && cd .."
   },
   "jest": {
     "preset": "ts-jest",
@@ -27,7 +28,7 @@
   "dependencies": {
     "@exobase/api": "^0.0.4",
     "@exobase/builds": "^0.0.1",
-    "@exobase/client-js": "^0.0.24",
+    "@exobase/client-js": "^0.0.41",
     "@exobase/core": "^0.0.3",
     "@exobase/express": "^0.0.3",
     "@exobase/hooks": "^0.0.5",

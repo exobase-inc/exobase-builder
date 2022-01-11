@@ -64,7 +64,7 @@ const main = _.defered(async ({ defer, deploymentId }: Args & { defer: Defer }) 
   //
   const templateName = `exo-${domain.provider}-domain`
   const {
-    pulumiTemplatesDir: templatesDir
+    stackBuilderDir: templatesDir
   } = config
   const workingDir = `${templatesDir}/packages/${safeName(deploymentId)}`
   await cmd(`mkdir ${workingDir}`)

@@ -17,7 +17,7 @@ async function deployDomain({ args }: Props<Args, Services>): Promise<void> {
 
   // Don't await. Just kick it off and forget it
   cmd(`yarn run deploy-domain --deploymentId ${args.deploymentId}`, {
-    cwd: config.projectRootDir
+    cwd: config.scriptsDir
   })
 
 }

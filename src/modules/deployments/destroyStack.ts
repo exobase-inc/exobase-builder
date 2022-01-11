@@ -17,7 +17,7 @@ async function destroyStack({ args }: Props<Args, Services>): Promise<void> {
 
   // Don't await. Just kick it off and forget it
   cmd(`yarn run destroy-stack --deploymentId ${args.deploymentId}`, {
-    cwd: config.projectRootDir
+    cwd: config.scriptsDir
   })
 
 }
