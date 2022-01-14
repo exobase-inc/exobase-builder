@@ -14,6 +14,7 @@ type Config = {
   useBridgeApi: boolean
   buildCommand: string
   bridgeApiKey?: string
+  dockerImage: string
 }
 
 type Outputs = {
@@ -57,8 +58,11 @@ const main = async (): Promise<Outputs> => {
     sourceDir: `${__dirname}/source`,
     buildTimeoutSeconds: toNumber(config.buildTimeoutSeconds),
     buildCommand: config.buildCommand,
-    image: 'node:16',
-    environmentVariables: deployment.config.environmentVariables
+    image: config.dockerImage, // 'node:16',
+    environmentVariables: deployment.config.environmentVariables.map(ev => ({
+      name: ev.name,
+      value: ev.value
+    }))
   }, { provider })
 
   if (!config.useBridgeApi) {
