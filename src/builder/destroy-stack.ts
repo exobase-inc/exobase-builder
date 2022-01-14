@@ -68,8 +68,8 @@ const main = _.defered(async ({ defer, deploymentId }: Args & { defer: Defer }) 
   const { service } = context
   const deploymentDir = safeName(deploymentId)
   const availablePackages = await listDirsInDir(`${templatesDir}/packages`)
-  const withLang = `exo-${service.type}-${service.provider}-${service.service}-${service.language}`
-  const withoutLang = `exo-${service.type}-${service.provider}-${service.service}`
+  const withLang = `${service.type}-${service.provider}-${service.service}-${service.language}`
+  const withoutLang = `${service.type}-${service.provider}-${service.service}`
   const templateName = (() => {
     if (availablePackages.includes(withLang)) return withLang
     if (availablePackages.includes(withoutLang)) return withoutLang
