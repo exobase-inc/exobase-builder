@@ -9,6 +9,7 @@ import config from '../core/config'
 import cmd from 'cmdish'
 import exobuilds from '@exobase/builds'
 import JSZip from 'jszip'
+import path from 'path'
 
 
 type Args = {
@@ -19,37 +20,13 @@ const safeName = (str: string) => str.replace(/[\.\-\s]/g, '_')
 
 const main = _.defered(async ({ defer, deploymentId }: Args & { defer: Defer }) => {
 
-
-  //
-  //  Setup Logging
-  //
-  const logFilePath = `${config.logDir}/${_.dashCase(deploymentId)}.log`
-  await fs.mkdir(config.logDir, { recursive: true })
-  await fs.writeFile(logFilePath, '')
-  const logStream = fs.createWriteStream(logFilePath)
-  process.stdout.write = process.stderr.write = logStream.write.bind(logStream)
-
-
   defer((err) => {
-    const logs = fs.readFileSync(logFilePath, 'utf-8')
     api.deployments.updateStatus({
       deploymentId,
-      status: (() => {
-        if (!err) return 'success'
-        if (/\+\s+?aws.+?created/.test(logs) || /~\s+?aws.+?updated/.test(logs)) {
-          return 'partial_success'
-        }
-        return 'failed'
-      })(),
+      status: err ? 'failed' : 'success',
       source: 'exo.builder.deploy',
     }, { token: config.exobaseToken })
-    api.deployments.updateLogs({
-      deploymentId,
-      logs
-    }, { token: config.exobaseToken })
-    // fs.removeSync(logFilePath)
   })
-
 
   //
   //  Fetch data from exobase api for this platform/project/environment/deployment
@@ -71,31 +48,49 @@ const main = _.defered(async ({ defer, deploymentId }: Args & { defer: Defer }) 
   }, { token: config.exobaseToken })
 
 
-  // 
-  //  Create temp pulumi working directory for this work
+
   //
-  const {
-    stackBuilderDir: templatesDir
-  } = config
-  const { service } = context
+  //  Install the build pack for the service
+  //
   const deploymentDir = safeName(deploymentId)
-  const availablePackages = await listDirsInDir(`${templatesDir}/packages`)
-  const withLang = `${service.type}-${service.provider}-${service.service}-${service.language}`
-  const withoutLang = `${service.type}-${service.provider}-${service.service}`
-  const templateName = (() => {
-    if (availablePackages.includes(withLang)) return withLang
-    if (availablePackages.includes(withoutLang)) return withoutLang
-    return null
-  })()
-  if (!templateName) {
-    throw `Could not find a suitable template to create service stack. Tried ${withLang} and ${withoutLang}`
-  }
-  const workingDir = `${templatesDir}/packages/${deploymentDir}`
-  await cmd(`mkdir ${workingDir}`)
+  const buildsDir = path.join(__dirname, '../../builds')
+  const templateWorkingDir = path.join(__dirname, '../build-template')
+  const workingDir = path.join(__dirname, `../../builds/${deploymentDir}`)
+  await cmd(`mkdir ${buildsDir}`)
+  await cmd(`cp -r ${templateWorkingDir} ${workingDir}`)
   defer(() => {
-    cmd(`rm -rf ${workingDir}`)
+    // cmd(`rm -rf ${workingDir}`)
   })
-  await cmd(`cp -a ${templatesDir}/packages/${templateName}/. ${workingDir}`)
+  await replaceInFile({
+    file: `${workingDir}/Pulumi.yml`,
+    find: /{{build-package}}/,
+    replacement: context.service.buildPack.name
+  })
+  await replaceInFile({
+    file: `${workingDir}/index.js`,
+    find: /{{build-package}}/,
+    replacement: context.service.buildPack.name
+  })
+  const installBuildPackCmd = context.service.buildPack.version
+    ? `yarn add @exobase/${context.service.buildPack.name}@${context.service.buildPack.version}`
+    : `yarn add @exobase/${context.service.buildPack.name}`
+  await cmd(installBuildPackCmd, {
+    cwd: workingDir
+  })
+
+
+  //
+  //  Update the build pack version if it wasn't already set
+  //
+  if (!context.service.buildPack.version) {
+    const pj = await fs.readJSON(`${workingDir}/package.json`)
+    await api.services.setBuildPackVersion({
+      platformId,
+      serviceId,
+      version: pj.dependencies[`@exobase/${context.service.buildPack.name}`].replace(/\^/, '')
+    }, { token: config.exobaseToken })
+  }
+
 
 
   //
@@ -103,15 +98,6 @@ const main = _.defered(async ({ defer, deploymentId }: Args & { defer: Defer }) 
   //
   await fs.writeJson(`${workingDir}/context.json`, context)
 
-
-  // 
-  //  Set the Pulumi project name in the Pulumi.yml
-  //
-  await replaceInFile({
-    file: `${workingDir}/Pulumi.yml`,
-    find: /exobase-(.+?)-template/,
-    replacement: safeName(`${platformId}_${serviceId}`)
-  })
 
 
   //
@@ -142,7 +128,7 @@ const main = _.defered(async ({ defer, deploymentId }: Args & { defer: Defer }) 
   })
   const sourceDirName = await getSourceDirName(`${workingDir}/source.zip`)
   await fs.rename(`${workingDir}/${sourceDirName}`, `${workingDir}/source`)
-  const functions = service.type === 'api' && exobuilds.getFunctionMap({
+  const functions = context.service.type === 'api' && exobuilds.getFunctionMap({
     path: `${workingDir}/source`,
     ext: 'ts'
   })
@@ -158,7 +144,7 @@ const main = _.defered(async ({ defer, deploymentId }: Args & { defer: Defer }) 
   //  will succeed but the select will fail. Ignoring some errors here
   //  so we don't have to do more work.
   //
-  const stackName = safeName(context.service.id)
+  const stackName = safeName(`${context.service.buildPack.name}-${context.service.id}`)
   await cmd(`pulumi stack init ${stackName}`, {
     cwd: workingDir
   })
@@ -185,9 +171,7 @@ const main = _.defered(async ({ defer, deploymentId }: Args & { defer: Defer }) 
   }
   const output = stackOutput && stackOutput.length > 2
     ? JSON.parse(stackOutput) as any
-    : { default: { out: {} } }
-
-
+    : {}
 
   // 
   //  Update service attributes with the Pulumi outputs  
@@ -196,9 +180,9 @@ const main = _.defered(async ({ defer, deploymentId }: Args & { defer: Defer }) 
     deploymentId,
     attributes: {
       version,
-      url: output.default.url,
-      outputs: output.default,
-      functions: service.type === 'api' ? functions.map(f => ({
+      url: output.url,
+      outputs: output,
+      functions: context.service.type === 'api' ? functions.map(f => ({
         module: f.module,
         function: f.function
       })) : []
@@ -221,7 +205,6 @@ const main = _.defered(async ({ defer, deploymentId }: Args & { defer: Defer }) 
 
 main(parseArgs(process.argv) as any as Args).catch((err) => {
   console.error(err)
-  // process.exit(1)
 })
 
 
@@ -259,17 +242,4 @@ const getSourceDirName = async (zipPath: string) => {
   const zipFileData = await fs.readFile(zipPath)
   const zip = await JSZip.loadAsync(zipFileData)
   return Object.keys(zip.files)[0]
-}
-
-const listDirsInDir = async (dirPath: string) => {
-  const files = await fs.readdir(dirPath)
-  const dirs = []
-  for (const file of files) {
-    const filePath = `${dirPath}/${file}`
-    const stat = await fs.stat(filePath)
-    if (stat.isDirectory()) {
-      dirs.push(file)
-    }
-  }
-  return dirs
 }

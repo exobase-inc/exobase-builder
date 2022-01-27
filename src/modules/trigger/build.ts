@@ -32,10 +32,6 @@ async function triggerBuild({ args }: Props<Args>): Promise<void> {
 
 export default _.compose(
   useExpress(),
-  (func: any) => async (props: Props) => {
-    console.log(JSON.stringify(props.req.headers))
-    return await func(props)
-  },
   useApiKeyAuthentication('our-little-secret'),
   useJsonArgs<Args>(yup => ({
     args: yup.object({

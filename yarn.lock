@@ -331,20 +331,20 @@
     fs-extra "^10.0.0"
     radash "^1.3.0"
 
-"@exobase/client-builder@^0.0.1":
-  version "0.0.1"
-  resolved "https://registry.yarnpkg.com/@exobase/client-builder/-/client-builder-0.0.1.tgz#d3dbbc79e7f9ab8ebf8d0ad8b8c3651886c5c3b5"
-  integrity sha512-i1yR51CU45c17fJmzAoHrdJU2acdhNWN+uhItcv4knAKpFRuHCRBhh42U73dHVzfQmDbDq50HyNOeuEQt+pViA==
+"@exobase/client-builder@^0.0.2-alpha.2":
+  version "0.0.2"
+  resolved "https://registry.yarnpkg.com/@exobase/client-builder/-/client-builder-0.0.2.tgz#b1014e5a1fd1841cd1a5aa407820fe4afee8a69d"
+  integrity sha512-b7ErZQtQvhf1vwg6M35jw//vLxkdr2EK7fhAE/HIrE290RuoHyKMzl4nLa+3crSnGbQUZqYaLUn9qQdgVHGSWA==
   dependencies:
     axios "^0.24.0"
-    radash "^1.2.0"
+    radash "^1.5.2"
 
-"@exobase/client-js@^0.0.41":
-  version "0.0.41"
-  resolved "https://registry.yarnpkg.com/@exobase/client-js/-/client-js-0.0.41.tgz#54bb44fb7261c421308a0c6d7a32802ba6a3514f"
-  integrity sha512-DYvng0qZjFAszh8MTOKV2cPr9EA5pb7nZdNZPShJ9LkZwpvrAjkbmWXaR60ldUcDDCVkYr7ZRHnreCPxBMX3gQ==
+"@exobase/client-js@^0.0.51":
+  version "0.0.51"
+  resolved "https://registry.yarnpkg.com/@exobase/client-js/-/client-js-0.0.51.tgz#c3ac784b8980ca43d60ec2e82a4aec2820b5cdba"
+  integrity sha512-lWiDuEikRpYADuVY3CUB6jMLNj6+tEnvPzURzl0kE4UgxujKJ/QfjYPJmiYgRjV37odSuY8CdTOzUyueoWqzCA==
   dependencies:
-    "@exobase/client-builder" "^0.0.1"
+    "@exobase/client-builder" "^0.0.2-alpha.2"
 
 "@exobase/core@^0.0.3":
   version "0.0.3"
@@ -1217,10 +1217,10 @@ cliui@^7.0.2:
     strip-ansi "^6.0.0"
     wrap-ansi "^7.0.0"
 
-cmdish@^1.0.2:
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/cmdish/-/cmdish-1.0.2.tgz#c212dd47ac46af2f0cd6660bac3fd97f8ae5571a"
-  integrity sha512-GZUakj5nRJGZEUDKFU/gV9xLOHiA5qg7zVYe2liJiXtsdRvYsAzYuj1N5RuegMRdK0TJ+vXzm/Conu7sMscgWw==
+cmdish@^1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/cmdish/-/cmdish-1.1.0.tgz#55d4be573efc8aaa7e6118143065110dfa9aaa6e"
+  integrity sha512-f64OcMO7VMG8SLXH92TvCLcj5EERegHAaUDghzc3EQr6noPSxzZqva0/JQETA7bISvqlrkZvyhSdjLvnVilB3w==
 
 co@^4.6.0:
   version "4.6.0"
@@ -2962,6 +2962,11 @@ radash@^1.5.1:
   version "1.5.1"
   resolved "https://registry.yarnpkg.com/radash/-/radash-1.5.1.tgz#9765f0871b0333cf1404d3d94dde52e12e90b2fd"
   integrity sha512-h42Frxn36zUhHQ2JG05xUu1fhGLRhOqFOg1O0aSp4VRk03m0Zk7BnM3mqVtEbqT7jQ4XI24gnTkriajlNnk2oA==
+
+radash@^1.5.2:
+  version "1.6.0"
+  resolved "https://registry.yarnpkg.com/radash/-/radash-1.6.0.tgz#ed0a829611cca1548318d2358e5502ee0791ee42"
+  integrity sha512-q6+93Dfeo1FfQ3oqYNhLgD7EanfZm2uGdiyLPI/Ugwf23pYZyDWKFk7qkY2a95HpaB7PWHozda8GvUAgZ9vxCw==
 
 range-parser@~1.2.1:
   version "1.2.1"

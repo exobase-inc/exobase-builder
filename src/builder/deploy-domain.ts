@@ -4,6 +4,7 @@ import parseArgs from 'minimist'
 import api from '../core/api'
 import config from '../core/config'
 import cmd from 'cmdish'
+import path from 'path'
 
 
 type Args = {
@@ -12,29 +13,14 @@ type Args = {
 
 const safeName = (str: string) => str.replace(/[\.\-\s]/g, '_')
 
-
 const main = _.defered(async ({ defer, deploymentId }: Args & { defer: Defer }) => {
 
-  //
-  //  Setup Logging
-  //
-  const logFilePath = `${config.logDir}/${_.dashCase(deploymentId)}.log`
-  await fs.writeFile(logFilePath, '')
-  // const logStream = fs.createWriteStream(logFilePath)
-  // process.stdout.write = process.stderr.write = logStream.write.bind(logStream)
-
   defer((err) => {
-    const logs = fs.readFileSync(logFilePath, 'utf-8')
     api.deployments.updateStatus({
       deploymentId,
       status: err ? 'failed' : 'success',
       source: 'exo.builder.deploy',
     }, { token: config.exobaseToken })
-    api.deployments.updateLogs({
-      deploymentId,
-      logs
-    }, { token: config.exobaseToken })
-    // fs.removeSync(logFilePath)
   })
 
   // 
@@ -46,7 +32,7 @@ const main = _.defered(async ({ defer, deploymentId }: Args & { defer: Defer }) 
   const { domain, platform } = context
 
   console.log('>>> CONTEXT')
-  console.log(JSON.stringify(context))
+  console.log(context)
 
 
   // 
@@ -59,19 +45,47 @@ const main = _.defered(async ({ defer, deploymentId }: Args & { defer: Defer }) 
   }, { token: config.exobaseToken })
 
 
-  // 
-  //  Create temp pulumi working directory for this work
   //
-  const templateName = `exo-${domain.provider}-domain`
-  const {
-    stackBuilderDir: templatesDir
-  } = config
-  const workingDir = `${templatesDir}/packages/${safeName(deploymentId)}`
-  await cmd(`mkdir ${workingDir}`)
+  //  Install the build pack for the service
+  //
+  const deploymentDir = safeName(deploymentId)
+  const buildsDir = path.join(__dirname, '../../builds')
+  const templateWorkingDir = path.join(__dirname, '../build-template')
+  const workingDir = path.join(__dirname, `../../builds/${deploymentDir}`)
+  await cmd(`mkdir ${buildsDir}`)
+  await cmd(`cp -r ${templateWorkingDir} ${workingDir}`)
   defer(() => {
-    cmd(`rm -rf ${workingDir}`)
+    // cmd(`rm -rf ${workingDir}`)
   })
-  await cmd(`cp -a ${templatesDir}/packages/${templateName}/. ${workingDir}`)
+  await replaceInFile({
+    file: `${workingDir}/Pulumi.yml`,
+    find: /{{build-package}}/,
+    replacement: context.domain.buildPack.name
+  })
+  await replaceInFile({
+    file: `${workingDir}/index.js`,
+    find: /{{build-package}}/,
+    replacement: context.domain.buildPack.name
+  })
+  const installBuildPackCmd = context.domain.buildPack.version
+    ? `yarn add @exobase/${context.domain.buildPack.name}@${context.domain.buildPack.version}`
+    : `yarn add @exobase/${context.domain.buildPack.name}`
+  await cmd(installBuildPackCmd, {
+    cwd: workingDir
+  })
+
+
+  //
+  //  Update the build pack version if it wasn't already set
+  //
+  if (!context.domain.buildPack.version) {
+    const pj = await fs.readJSON(`${workingDir}/package.json`)
+    await api.domains.setBuildPackVersion({
+      platformId: platform.id,
+      domainId: domain.id,
+      version: pj.dependencies[`@exobase/${context.domain.buildPack.name}`].replace(/\^/, '')
+    }, { token: config.exobaseToken })
+  }
 
 
   //
@@ -79,15 +93,6 @@ const main = _.defered(async ({ defer, deploymentId }: Args & { defer: Defer }) 
   //
   await fs.writeJson(`${workingDir}/context.json`, context)
 
-
-  // 
-  //  Set the Pulumi project name in the Pulumi.yml
-  //
-  await replaceInFile({
-    file: `${workingDir}/Pulumi.yml`,
-    find: /exobase-(.+?)-template/,
-    replacement: safeName(`${platform.id}_${domain.id}`)
-  })
 
 
   // 
@@ -116,7 +121,6 @@ const main = _.defered(async ({ defer, deploymentId }: Args & { defer: Defer }) 
 
 main(parseArgs(process.argv) as any as Args).catch((err) => {
   console.error(err)
-  process.exit(1)
 })
 
 

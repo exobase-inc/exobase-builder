@@ -16,7 +16,7 @@
   "dependencies": {
     "@exobase/client-js": "^0.0.27",
     "@exobase/pulumi-aws-code-build": "^0.0.1-alpha.2",
-    "@exobase/pulumi-aws-s3-static-website": "^0.0.1-alpha.14",
+    "@exobase/pulumi-aws-s3-static-website": "^0.0.1-alpha.15",
     "@pulumi/aws": "^4.0.0",
     "@pulumi/awsx": "^0.30.0",
     "@pulumi/pulumi": "^3.0.0",

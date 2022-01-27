@@ -1,0 +1,4 @@
+name: exobase-{{build-package}}
+description: Exobase build stack
+runtime:
+    name: nodejs

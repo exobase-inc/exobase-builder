@@ -1,0 +1,9 @@
+{
+  "name": "exobase-build",
+  "version": "0.0.1",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "run": "node ./index.js"
+  }
+}

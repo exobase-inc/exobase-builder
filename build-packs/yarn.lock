@@ -99,10 +99,10 @@
     fs-extra "^10.0.0"
     radash "^1.4.0"
 
-"@exobase/pulumi-aws-s3-static-website@^0.0.1-alpha.14":
-  version "0.0.1-alpha.14"
-  resolved "https://registry.yarnpkg.com/@exobase/pulumi-aws-s3-static-website/-/pulumi-aws-s3-static-website-0.0.1-alpha.14.tgz#0ada0b53fe76b6ff814e04cfee297a4923202042"
-  integrity sha512-3xPxqF6RcWeaa47AiwbQRBFMPdLU4eCQ6aviD0e6xSvp98p0XDF/o1rMNwy+HuIVhG8z8aaC5uPfjGPlcr/B5w==
+"@exobase/pulumi-aws-s3-static-website@^0.0.1-alpha.15":
+  version "0.0.1-alpha.15"
+  resolved "https://registry.yarnpkg.com/@exobase/pulumi-aws-s3-static-website/-/pulumi-aws-s3-static-website-0.0.1-alpha.15.tgz#34599bd5b8fb4f56e7eb8df6bec3cfdcd76270f7"
+  integrity sha512-9IFi3zUVVHHMV9VSmXmlrp5xN9bsVMpCm8+M59UBZPrCvzbRSR7XuQ3iSkTtNIZ8BsrJB77H6oLZUmAWUhbcFg==
   dependencies:
     "@pulumi/aws" "^4.0.0"
     "@pulumi/awsx" "^0.30.0"
