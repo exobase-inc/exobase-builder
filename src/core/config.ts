@@ -18,7 +18,6 @@ const config = {
     exobaseToken: get('EXOBASE_TOKEN'),
     rootDir: path.join(__dirname, '../..'),
     logDir: path.join(__dirname, '../../logs'),
-    stackBuilderDir: path.join(__dirname, '../../build-packs'),
     scriptsDir: path.join(__dirname, '../builder')
 }
 

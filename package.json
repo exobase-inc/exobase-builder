@@ -9,7 +9,6 @@
     "destroy-stack": "ts-node  --transpile-only ./src/builder/destroy-stack.ts",
     "deploy-domain": "ts-node  --transpile-only ./src/builder/deploy-domain.ts",
     "test": "jest --coverage",
-    "postinstall": "cd build-packs && yarn && cd ..",
     "build": "ts-node --transpile-only ./src/build.ts"
   },
   "jest": {
