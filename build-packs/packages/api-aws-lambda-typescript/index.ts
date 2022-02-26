@@ -53,7 +53,13 @@ const main = async (): Promise<Outputs> => {
     buildCommand: (() => {
       const useNvm = !!process.env.USE_NVM
       const nvmPrefix = 'source ~/.nvm/nvm.sh && nvm use && '
-      const cmd = 'yarn && yarn build && cp package.json ./build/package.json && cd build && yarn'
+      const cmd = [
+        'yarn',
+        'yarn build',
+        `awk '/},/ { p = 0 } { if (!p) { print $0 } } /"devDependencies":/ { p = 1 }' package.json > build/package.json`,
+        'cd build',
+        'yarn --prod'
+      ].join(' && ')
       return `${useNvm ? nvmPrefix : ''}${cmd}`
     })(),
     runtime: 'nodejs14.x',
