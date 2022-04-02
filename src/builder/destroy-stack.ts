@@ -33,6 +33,7 @@ const main = _.defered(async ({ defer, deploymentId }: Args & { defer: Defer }) 
   const platformId = context.platform.id
   const serviceId = context.service.id
 
+  const stackName = safeName(`${context.service.buildPack.name}-${context.service.id}`)
 
   // 
   //  Mark deployment as in progress
@@ -84,8 +85,7 @@ const main = _.defered(async ({ defer, deploymentId }: Args & { defer: Defer }) 
   //
   //  Run Pulumi Destroy to tear down all infrastructure
   //
-  const stackName = safeName(context.service.id)
-  await cmd(`pulumi destroy --yes --stack exobase-${context.service.buildPack.name}`, {
+  await cmd(`pulumi destroy --yes --stack ${stackName}`, {
     cwd: workingDir
   })
 

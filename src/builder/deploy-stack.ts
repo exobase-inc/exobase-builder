@@ -80,20 +80,6 @@ const main = _.defered(async ({ defer, deploymentId }: Args & { defer: Defer }) 
 
 
   //
-  //  Update the build pack version if it wasn't already set
-  //
-  if (!context.service.buildPack.version) {
-    const pj = await fs.readJSON(`${workingDir}/package.json`)
-    await api.services.setBuildPackVersion({
-      platformId,
-      serviceId,
-      version: pj.dependencies[`@exobase/${context.service.buildPack.name}`].replace(/\^/, '')
-    }, { token: config.exobaseToken })
-  }
-
-
-
-  //
   //  Write all platform/project/environment/deployment data to temp
   //
   await fs.writeJson(`${workingDir}/context.json`, context)
@@ -128,10 +114,6 @@ const main = _.defered(async ({ defer, deploymentId }: Args & { defer: Defer }) 
   })
   const sourceDirName = await getSourceDirName(`${workingDir}/source.zip`)
   await fs.rename(`${workingDir}/${sourceDirName}`, `${workingDir}/source`)
-  const functions = context.service.type === 'api' && exobuilds.getFunctionMap({
-    path: `${workingDir}/source`,
-    ext: 'ts'
-  })
   const pj = await fs.readJson(`${workingDir}/source/package.json`)
   const version = pj?.version ?? ''
 
@@ -157,10 +139,26 @@ const main = _.defered(async ({ defer, deploymentId }: Args & { defer: Defer }) 
   const [upErr] = await cmd('pulumi up --yes', {
     cwd: workingDir
   })
-  if (upErr !== null) {
+  if (upErr) {
     console.error('The Pulumi deployment stack failed to deploy. Check for errors just above this.')
     throw 'Pulumi up failed'
+  }  
+  
+  //
+  //  Update the build pack version if it wasn't already set
+  //
+  //  Only update after successful pulumi up
+  //
+  if (!context.service.buildPack.version) {
+    const pj = await fs.readJSON(`${workingDir}/package.json`)
+    await api.services.setBuildPackVersion({
+      platformId,
+      serviceId,
+      version: pj.dependencies[`@exobase/${context.service.buildPack.name}`].replace(/\^/, '')
+    }, { token: config.exobaseToken })
   }
+
+
   const [outputErr, stackOutput] = await cmd('pulumi stack output --json', {
     cwd: workingDir,
     buffer: true
@@ -176,6 +174,10 @@ const main = _.defered(async ({ defer, deploymentId }: Args & { defer: Defer }) 
   // 
   //  Update service attributes with the Pulumi outputs  
   //
+  const functions = context.service.type === 'api' && exobuilds.getFunctionMap({
+    path: `${workingDir}/source`,
+    ext: 'ts'
+  })
   await api.deployments.updateAttributes({
     deploymentId,
     attributes: {

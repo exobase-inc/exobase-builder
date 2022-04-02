@@ -41,11 +41,11 @@ outStream.on('data', (chunk) => {
   if (process.env.EXO_ENV === 'local') {
     console.log(chunk.toString())
   }
-  api.deployments.appendLogChunk({
-    deploymentId: args.deploymentId,
-    chunk: {
-      content: chunk.toString(),
-      timestamp: Date.now()
-    }
-  }, { token: config.exobaseToken })
+  // api.deployments.appendLogChunk({
+  //   deploymentId: args.deploymentId,
+  //   chunk: {
+  //     content: chunk.toString(),
+  //     timestamp: Date.now()
+  //   }
+  // }, { token: config.exobaseToken })
 })
