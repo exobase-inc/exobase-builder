@@ -4,30 +4,24 @@ import api from './core/api'
 import config from './core/config'
 import { PassThrough } from 'stream'
 
-
 type Args = {
-  action: 'deploy-domain' | 'deploy-stack' | 'destroy-stack'
   deploymentId: string
+  workspaceId: string
+  platformId: string
+  unitId: string
+  logId: string
 }
 
 const args: Args = JSON.parse(Buffer.from(process.env.TASK_ARGS, 'base64').toString())
 
-const command = (() => {
-  if (args.action === 'deploy-domain') {
-    return `yarn deploy-domain --deploymentId ${args.deploymentId}`
-  }
-  if (args.action === 'deploy-stack') {
-    return `yarn deploy-stack --deploymentId ${args.deploymentId}`
-  }
-  if (args.action === 'destroy-stack') {
-    return `yarn destroy-stack --deploymentId ${args.deploymentId}`
-  }
-})()
+const command = `yarn execute-pack --deploymentId ${args.deploymentId} --workspaceId ${args.workspaceId} --platformId ${args.platformId} --unitId ${args.unitId} --logId ${args.logId}`
 
-console.log({
-  ...args,
-  command
-})
+if (process.env.EXO_ENV === 'local') {
+  console.log({
+    ...args,
+    command
+  })
+}
 
 const child = cmd.create(command, {
   cwd: path.join(__dirname, '..')
@@ -41,11 +35,9 @@ outStream.on('data', (chunk) => {
   if (process.env.EXO_ENV === 'local') {
     console.log(chunk.toString())
   }
-  // api.deployments.appendLogChunk({
-  //   deploymentId: args.deploymentId,
-  //   chunk: {
-  //     content: chunk.toString(),
-  //     timestamp: Date.now()
-  //   }
-  // }, { token: config.exobaseToken })
+  api.logs.appendChunk({
+    logId: args.logId,
+    content: chunk.toString(),
+    timestamp: Date.now()
+  }, { token: config.exobaseToken })
 })

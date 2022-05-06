@@ -14,8 +14,11 @@ import { useApiKeyAuthentication } from '@exobase/auth'
 
 interface Args {
   args: {
-    action: 'deploy-domain' | 'deploy-stack' | 'destroy-stack'
     deploymentId: string
+    workspaceId: string
+    platformId: string
+    unitId: string
+    logId: string
   }
 }
 
@@ -35,12 +38,11 @@ export default _.compose(
   useApiKeyAuthentication('our-little-secret'),
   useJsonArgs<Args>(yup => ({
     args: yup.object({
-      action: yup.string().oneOf([
-        'deploy-domain', 
-        'deploy-stack', 
-        'destroy-stack'
-      ]).required(),
-      deploymentId: yup.string().required()
+      workspaceId: yup.string().required(),
+      platformId: yup.string().required(),
+      deploymentId: yup.string().required(),
+      unitId: yup.string().required(),
+      logId: yup.string().required(),
     }).required()
   })),
   triggerBuild
