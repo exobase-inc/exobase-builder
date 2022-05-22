@@ -339,10 +339,10 @@
     axios "^0.24.0"
     radash "^1.5.2"
 
-"@exobase/client-js@^1.0.0-alpha.13":
-  version "1.0.0-alpha.13"
-  resolved "https://registry.yarnpkg.com/@exobase/client-js/-/client-js-1.0.0-alpha.13.tgz#9101a82c24571fbe008e533ee73caf13e0567da3"
-  integrity sha512-p2roTV1ykXpgIJami0HDF4E9iQXErjIdUEt/S7jrYTTRbJI0OrPlTR5O4ctQr+dwStSSP/j/bdwocbwiU85E/Q==
+"@exobase/client-js@^1.0.0-alpha.15":
+  version "1.0.0-alpha.15"
+  resolved "https://registry.yarnpkg.com/@exobase/client-js/-/client-js-1.0.0-alpha.15.tgz#2d495b798cb6d1bbcffd3179f5af3dd3a6e5a082"
+  integrity sha512-lOA4jujVDJR39eiqg8rRb1m/BRh/QZ9EHDiq8Dnb2ull/kWTiPUzLCCqGJWqRkaDghXgDb6WeI78pI/0KqN0aw==
   dependencies:
     "@exobase/client-builder" "^0.0.2-alpha.2"
 

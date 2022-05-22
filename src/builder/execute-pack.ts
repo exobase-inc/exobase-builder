@@ -10,7 +10,7 @@ import JSZip from 'jszip'
 import path from 'path'
 import octo from 'octokit-downloader'
 import slugger from 'url-slug'
-import { AWSProvider } from '@exobase/client-js'
+import type { AWSProvider } from '@exobase/client-js'
 
 type Args = {
   deploymentId: string
@@ -113,8 +113,9 @@ const main = _.defered(async ({ defer, deploymentId, workspaceId, platformId, un
   //  Write state.tf file and .aws/conf .aws/creds to 
   //  working directory
   //
+  const aws = context.provider as AWSProvider
   if (context.pack.provider === 'aws') {
-    const aws = context.provider as AWSProvider
+    await fs.mkdir(`${workingDir}/.aws`)
   await fs.writeFile(`${workingDir}/.aws/conf`, `
 [exobase_tf_state_man]
 output = json
@@ -152,13 +153,42 @@ terraform {
   }
 
   //
+  //  Write tfvars to file
+  //
+  const tfvars = context.pack.version.inputs.reduce((acc, input) => {
+    if (input.name.startsWith('exo_')) return acc
+    const value = (() => {
+      const raw = context.unit.config[input.name]
+      if (input.ui === 'string') return `"${raw}"`
+      if (input.ui === 'number') return raw
+      if (input.ui === 'envars') return JSON.stringify(JSON.stringify(raw))
+    })()
+    return [
+      acc,
+      `${input.name}=${value}`
+    ].join('\n')
+  }, '')
+  const tfvarsWithContext = [
+    tfvars,
+    `exo_context=${JSON.stringify(JSON.stringify(context))}`
+  ].join('\n')
+  await fs.writeFile(path.join(workingDir, 'main.tfvars'), tfvarsWithContext, 'utf-8')
+  
+  //
   //  Run Terraform Deploy
   //
-  const [initErr] = await cmd('tf init', { cwd: workingDir })
+  const [initErr] = await cmd('terraform init', { cwd: workingDir })
   if (initErr) {
     throw `Terraform init failed. Code: ${initErr}`
   }
-  const [upErr] = await cmd(`tf ${context.deployment.type === 'create' ? 'apply' : 'destroy'} -auto-approve`, { cwd: workingDir })
+  const [upErr] = await cmd(`terraform plan -var-file=main.tfvars`, { cwd: workingDir, env: {
+    AWS_REGION: aws.auth.region,
+    AWS_PROFILE: 'client',
+    AWS_CONFIG_FILE: path.join(workingDir, '.aws/conf'),
+    AWS_SHARED_CREDENTIALS_FILE: path.join(workingDir, '.aws/conf')
+  } })
+  return
+  // const [upErr] = await cmd(`terraform ${context.deployment.type === 'create' ? 'apply' : 'destroy'} -auto-approve -input=false -var-file=main.tfvars`, { cwd: workingDir })
   if (upErr) {
     console.error('The build pack deployment stack failed to deploy. Check for errors just above this.')
     throw 'Build pack up failed'
