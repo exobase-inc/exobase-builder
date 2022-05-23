@@ -101,12 +101,43 @@ const main = _.defered(async ({ defer, deploymentId, workspaceId, platformId, un
   await fs.rename(`${workingDir}/${sourceDirName}`, `${workingDir}/source`)
 
   //
+  //  Write tfvars to file
+  //
+  const tfvars = context.pack.version.inputs.reduce((acc, input) => {
+    if (input.name.startsWith('exo_')) return acc
+    const value = (() => {
+      const raw = context.unit.config[input.name]
+      if (input.ui === 'string') return `"${raw}"`
+      if (input.ui === 'number') return raw
+      if (input.ui === 'envars') return JSON.stringify(JSON.stringify(raw))
+      if (input.ui === 'bool') return raw ? 'true' : 'false'
+      return raw
+    })()
+    return [
+      acc,
+      `${input.name}=${value}`
+    ].join('\n')
+  }, '')
+  const tfvarsWithContext = [
+    tfvars,
+    `exo_context=${JSON.stringify(JSON.stringify(context))}`,
+    `exo_source="${path.join(workingDir, 'source')}"`
+  ].join('\n')
+  await fs.writeFile(path.join(workingDir, 'main.tfvars'), tfvarsWithContext, 'utf-8')
+  await fs.writeFile(path.join(workingDir, 'tfvars.json'), JSON.stringify({
+    ...context.unit.config,
+    exo_context: context,
+    exo_source: `"${path.join(workingDir, 'source')}"`
+  }), 'utf-8')
+
+  //
   //  TODO: Read pack.json and execute commands
   //
   if (context.pack.version.manifest.build?.before) {
-    await cmd(context.pack.version.manifest.build.before, {
+    const [beforeErr] = await cmd(context.pack.version.manifest.build.before, {
       cwd: workingDir
     })
+    if (beforeErr) throw `${context.pack.version.manifest.build.before} failed`
   }
 
   //
@@ -117,11 +148,11 @@ const main = _.defered(async ({ defer, deploymentId, workspaceId, platformId, un
   if (context.pack.provider === 'aws') {
     await fs.mkdir(`${workingDir}/.aws`)
   await fs.writeFile(`${workingDir}/.aws/conf`, `
-[exobase_tf_state_man]
+[state]
 output = json
 region = us-east-1
 
-[exobase_customer_man]
+[client]
 output = json
 region = us-east-1
 `, 'utf-8')
@@ -151,28 +182,6 @@ terraform {
   } else if (context.pack.provider === 'gcp') {
     // TODO: Implement logic for GCP terraform state/authentication
   }
-
-  //
-  //  Write tfvars to file
-  //
-  const tfvars = context.pack.version.inputs.reduce((acc, input) => {
-    if (input.name.startsWith('exo_')) return acc
-    const value = (() => {
-      const raw = context.unit.config[input.name]
-      if (input.ui === 'string') return `"${raw}"`
-      if (input.ui === 'number') return raw
-      if (input.ui === 'envars') return JSON.stringify(JSON.stringify(raw))
-    })()
-    return [
-      acc,
-      `${input.name}=${value}`
-    ].join('\n')
-  }, '')
-  const tfvarsWithContext = [
-    tfvars,
-    `exo_context=${JSON.stringify(JSON.stringify(context))}`
-  ].join('\n')
-  await fs.writeFile(path.join(workingDir, 'main.tfvars'), tfvarsWithContext, 'utf-8')
   
   //
   //  Run Terraform Deploy
@@ -181,14 +190,19 @@ terraform {
   if (initErr) {
     throw `Terraform init failed. Code: ${initErr}`
   }
-  const [upErr] = await cmd(`terraform plan -var-file=main.tfvars`, { cwd: workingDir, env: {
+  // const [upErr] = await cmd(`terraform plan -var-file=main.tfvars`, { cwd: workingDir, env: {
+  //   AWS_REGION: aws.auth.region,
+  //   AWS_PROFILE: 'client',
+  //   AWS_CONFIG_FILE: path.join(workingDir, '.aws/conf'),
+  //   AWS_SHARED_CREDENTIALS_FILE: path.join(workingDir, '.aws/creds')
+  // } })
+  // return
+  const [upErr] = await cmd(`terraform ${context.deployment.type === 'create' ? 'apply' : 'destroy'} -auto-approve -input=false -var-file=main.tfvars`, { cwd: workingDir, env: {
     AWS_REGION: aws.auth.region,
     AWS_PROFILE: 'client',
     AWS_CONFIG_FILE: path.join(workingDir, '.aws/conf'),
-    AWS_SHARED_CREDENTIALS_FILE: path.join(workingDir, '.aws/conf')
+    AWS_SHARED_CREDENTIALS_FILE: path.join(workingDir, '.aws/creds')
   } })
-  return
-  // const [upErr] = await cmd(`terraform ${context.deployment.type === 'create' ? 'apply' : 'destroy'} -auto-approve -input=false -var-file=main.tfvars`, { cwd: workingDir })
   if (upErr) {
     console.error('The build pack deployment stack failed to deploy. Check for errors just above this.')
     throw 'Build pack up failed'

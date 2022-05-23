@@ -16,12 +16,12 @@ const args: Args = JSON.parse(Buffer.from(process.env.TASK_ARGS, 'base64').toStr
 
 const command = `yarn execute-pack --deploymentId ${args.deploymentId} --workspaceId ${args.workspaceId} --platformId ${args.platformId} --unitId ${args.unitId} --logId ${args.logId}`
 
-if (process.env.EXO_ENV === 'local') {
+// if (process.env.EXO_ENV === 'local') {
   console.log({
     ...args,
     command
   })
-}
+// }
 
 const child = cmd.create(command, {
   cwd: path.join(__dirname, '..')

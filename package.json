@@ -24,7 +24,7 @@
     "@exobase/api": "^0.0.4",
     "@exobase/auth": "^0.0.14",
     "@exobase/builds": "^0.0.1",
-    "@exobase/client-js": "^1.0.0-alpha.15",
+    "@exobase/client-js": "^1.0.0-alpha.17",
     "@exobase/core": "^0.0.3",
     "@exobase/express": "^0.0.3",
     "@exobase/hooks": "^0.0.5",
