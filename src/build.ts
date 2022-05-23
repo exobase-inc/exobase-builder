@@ -32,9 +32,9 @@ child.stdout.pipe(outStream)
 child.stderr.pipe(outStream)
 
 outStream.on('data', (chunk) => {
-  if (process.env.EXO_ENV === 'local') {
+  // if (process.env.EXO_ENV === 'local') {
     console.log(chunk.toString())
-  }
+  // }
   api.logs.appendChunk({
     logId: args.logId,
     content: chunk.toString(),
