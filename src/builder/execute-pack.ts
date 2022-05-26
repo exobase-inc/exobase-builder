@@ -79,26 +79,52 @@ const main = _.defered(async ({ defer, deploymentId, workspaceId, platformId, un
   //  get the name of that directory. We then rename it to 'source' as
   //  our terraform build packs will expect.
   //
-  const linkResponse = await api.units.getSourceDownloadLink({
-    deploymentId,
-    workspaceId,
-    platformId,
-    unitId,
-  }, { token: config.exobaseToken })
-  if (linkResponse.error) {
-    console.error(linkResponse.error)
-    return
+  if (context.deployment.trigger.type === 'github-push' || context.deployment.trigger.type === 'user-ui') {
+    const linkResponse = await api.units.getSourceDownloadLink({
+      deploymentId,
+      workspaceId,
+      platformId,
+      unitId,
+    }, { token: config.exobaseToken })
+    if (linkResponse.error) {
+      console.error(linkResponse.error)
+      return
+    }
+    await downloadZipFile({
+      url: linkResponse.data.url,
+      path: `${workingDir}/source.zip`
+    })
+    await cmd(`unzip source.zip`, {
+      cwd: workingDir,
+      quiet: true
+    })
+    const sourceDirName = await getSourceDirName(`${workingDir}/source.zip`)
+    await fs.rename(`${workingDir}/${sourceDirName}`, `${workingDir}/source`)
   }
-  await downloadZipFile({
-    url: linkResponse.data.url,
-    path: `${workingDir}/source.zip`
-  })
-  await cmd(`unzip source.zip`, {
-    cwd: workingDir,
-    quiet: true
-  })
-  const sourceDirName = await getSourceDirName(`${workingDir}/source.zip`)
-  await fs.rename(`${workingDir}/${sourceDirName}`, `${workingDir}/source`)
+
+  if (context.deployment.trigger.type === 'user-cli' && context.deployment.trigger.upload?.id) {
+    const linkResponse = await api.deployments.getUploadSourceLink({
+      workspaceId,
+      platformId,
+      unitId,
+      upload: {
+        id: context.deployment.trigger.upload.id,
+        timestamp: context.deployment.trigger.upload.timestamp
+      }
+    }, { token: config.exobaseToken })
+    if (linkResponse.error) {
+      console.error(linkResponse.error)
+      return
+    }
+    await downloadZipFile({
+      url: linkResponse.data.url,
+      path: `${workingDir}/source.zip`
+    })
+    await cmd(`unzip source.zip -d source`, {
+      cwd: workingDir,
+      quiet: true
+    })
+  }
 
   //
   //  Write tfvars to file
@@ -223,9 +249,25 @@ terraform {
     console.error('The build pack failed to provide outputs. Check for errors just above this.')
     throw 'Build pack outputs failed'
   }
-  const output = stackOutput && stackOutput.length > 2
+  const outputDict: Record<string, {
+    sensitive: boolean
+    type: 'string' | 'number' | 'bool'
+    value: string | number | boolean
+  }> = stackOutput && stackOutput.length > 2
     ? JSON.parse(stackOutput) as any
     : {}
+  
+  const output = Object.keys(outputDict).reduce((acc, key) => {
+    return [...acc, {
+      ...outputDict[key],
+      name: key
+    }]
+  }, [] as {
+    sensitive: boolean
+    type: 'string' | 'number' | 'bool'
+    value: string | number | boolean
+    name: string
+  }[])
 
   //
   //  Update service attributes with the Terraform outputs  
